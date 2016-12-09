@@ -1,0 +1,299 @@
+---
+title: "Household Report"
+author: "CISM"
+date: "December 7, 2016"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: yeti
+---
+
+```{r setup, include=FALSE}
+# Basic knitr options
+library(knitr)
+opts_chunk$set(comment = NA, 
+               echo = FALSE, 
+               warning = FALSE, 
+               message = FALSE, 
+               error = FALSE, 
+               cache = FALSE)
+```
+
+
+```{r}
+library(dplyr)
+library(readr)
+library(sp)
+library(raster)
+library(leaflet)
+library(ggplot2)
+library(rgeos)
+library(maptools)
+library(ggthemes)
+library(rasterVis)
+library(rgdal)
+library(readr)
+library(cism)
+options(scipen = 999)
+```
+
+```{r}
+# READ IN OUR TABLES OF INTEREST
+if('df.RData' %in% dir()){
+  load('df.RData')
+} else {
+  location <- 
+  cism::get_data(tab = 'location',
+                dbname = 'openhds')
+location$latitude <- as.numeric(as.character(location$latitude))
+location$longitude <- as.numeric(as.character(location$longitude))
+
+HOUSEHOLD_ECONOMICS_CORE <-
+  cism::get_data(tab = 'HOUSEHOLD_ECONOMICS_CORE',
+                 dbname = 'dssodk')
+
+LOCATION_DETAILS_CORE <-
+  cism::get_data(tab = 'LOCATION_DETAILS_CORE',
+                 dbname = 'dssodk')
+
+# MERGE ALL THREE
+df <-
+  location %>%
+  left_join(HOUSEHOLD_ECONOMICS_CORE %>%
+              # only keep those that are accurate
+              filter(PROCESSED_BY_MIRTH == 0,
+                     PROCESSED_BY_SYNC == 1) %>%
+              # remove duplicates
+              filter(!duplicated(LOCATION_ID)),
+            by = c('extId' = 'LOCATION_ID')) %>%
+  left_join(LOCATION_DETAILS_CORE %>%
+              # only keep those that are accurate
+              filter(PROCESSED_BY_MIRTH == 0,
+                     PROCESSED_BY_SYNC == 1) %>%
+              # remove duplicates
+              filter(!duplicated(LOCATION_ID)),
+            by = c('extId' = 'LOCATION_ID')) 
+save(df, 
+     file = 'df.RData')
+}
+
+# Get dictionary
+dictionary <- get_dssodk_dictionary()
+```
+
+
+# Population distribution
+
+```{r, fig.width = 8}
+cism_map(lng = df$longitude,
+         lat = df$latitude)
+``` 
+
+## Population composiiton
+
+```{r, fig.width = 8}
+cism_map(lng = df$longitude,
+         lat = df$latitude,
+         x = df$HAS_RADIO )
+``` 
+
+
+
+# Household characteristics
+
+There are `r nrow(df)` households in the district of Manhiça.
+
+## Wall material
+
+
+```{r}
+the_variable <- 'WALL_MATERIAL'
+x <- translate_dssodk(dictionary = dictionary,
+                      tab = df,
+                      table_name = 'LOCATION_DETAILS_CORE',
+                      variable = the_variable)
+cism_plot(x = eval(parse(text = paste0('x$`', names(x), '`')))) +
+  ggtitle(gsub('_', ' ', names(x)))
+```
+
+```{r}
+cism_map(lng = df$longitude,
+         lat = df$latitude,
+         x = eval(parse(text = paste0('x$`', names(x), '`'))),
+         point_size = 0.1,
+         fspdf = man2_fortified) +
+  ggtitle(names(x))
+```
+
+
+
+## Kitchen coverage
+
+
+```{r}
+the_variable <- 'KITCHEN_HAS_COVERAGE'
+x <- translate_dssodk(dictionary = dictionary,
+                      tab = df,
+                      table_name = 'LOCATION_DETAILS_CORE',
+                      variable = the_variable)
+cism_plot(x = eval(parse(text = paste0('x$`', names(x), '`')))) +
+  ggtitle(gsub('_', ' ', names(x)))
+```
+
+```{r}
+cism_map(lng = df$longitude,
+         lat = df$latitude,
+         x = eval(parse(text = paste0('x$`', names(x), '`'))),
+         point_size = 0.1,
+         fspdf = man2_fortified) +
+  ggtitle(names(x))
+```
+
+
+
+## Floor type
+
+
+```{r}
+the_variable <- 'FLOOR_MATERIAL'
+x <- translate_dssodk(dictionary = dictionary,
+                      tab = df,
+                      table_name = 'LOCATION_DETAILS_CORE',
+                      variable = the_variable)
+cism_plot(x = eval(parse(text = paste0('x$`', names(x), '`')))) +
+  ggtitle(gsub('_', ' ', names(x)))
+```
+
+```{r}
+cism_map(lng = df$longitude,
+         lat = df$latitude,
+         x = eval(parse(text = paste0('x$`', names(x), '`'))),
+         point_size = 0.1,
+         fspdf = man2_fortified) +
+  ggtitle(names(x))
+```
+
+
+
+
+## Kitchen fuel
+
+
+```{r}
+the_variable <- 'KITCHEN_FUEL'
+x <- translate_dssodk(dictionary = dictionary,
+                      tab = df,
+                      table_name = 'LOCATION_DETAILS_CORE',
+                      variable = the_variable)
+cism_plot(x = eval(parse(text = paste0('x$`', names(x), '`')))) +
+  ggtitle(gsub('_', ' ', names(x)))
+```
+
+```{r}
+cism_map(lng = df$longitude,
+         lat = df$latitude,
+         x = eval(parse(text = paste0('x$`', names(x), '`'))),
+         point_size = 0.1,
+         fspdf = man2_fortified) +
+  ggtitle(names(x))
+```
+
+
+## Illumination fuel
+
+
+```{r}
+the_variable <- 'ILUMINATION_FUEL'
+x <- translate_dssodk(dictionary = dictionary,
+                      tab = df,
+                      table_name = 'LOCATION_DETAILS_CORE',
+                      variable = the_variable)
+cism_plot(x = eval(parse(text = paste0('x$`', names(x), '`')))) +
+  ggtitle(gsub('_', ' ', names(x)))
+```
+
+
+```{r}
+cism_map(lng = df$longitude,
+         lat = df$latitude,
+         x = eval(parse(text = paste0('x$`', names(x), '`'))),
+         point_size = 0.1,
+         fspdf = man2_fortified) +
+  ggtitle(names(x))
+```
+
+
+
+
+## Latrine type
+
+```{r}
+the_variable <- 'LATRINE_TYPE'
+x <- translate_dssodk(dictionary = dictionary,
+                      tab = df,
+                      table_name = 'LOCATION_DETAILS_CORE',
+                      variable = the_variable)
+cism_plot(x = eval(parse(text = paste0('x$`', names(x), '`')))) +
+  ggtitle(gsub('_', ' ', names(x)))
+```
+
+
+```{r}
+cism_map(lng = df$longitude,
+         lat = df$latitude,
+         x = eval(parse(text = paste0('x$`', names(x), '`'))),
+         point_size = 0.1,
+         fspdf = man2_fortified) +
+  ggtitle(names(x))
+```
+
+
+
+
+## Water source
+
+
+```{r}
+the_variable <- 'WATER_SOURCE'
+x <- translate_dssodk(dictionary = dictionary,
+                      tab = df,
+                      table_name = 'LOCATION_DETAILS_CORE',
+                      variable = the_variable)
+cism_plot(x = eval(parse(text = paste0('x$`', names(x), '`')))) +
+  ggtitle(gsub('_', ' ', names(x)))
+```
+
+
+```{r}
+cism_map(lng = df$longitude,
+         lat = df$latitude,
+         x = eval(parse(text = paste0('x$`', names(x), '`'))),
+         point_size = 0.1,
+         fspdf = man2_fortified) +
+  ggtitle(names(x))
+```
+
+
+## Number of divisions
+
+```{r}
+the_variable <- 'NR_HOUSE_DIVISIONS'
+x <- translate_dssodk(dictionary = dictionary,
+                      tab = df,
+                      table_name = 'LOCATION_DETAILS_CORE',
+                      variable = the_variable)
+cism_plot(x = eval(parse(text = paste0('x$`', names(x), '`')))) +
+  ggtitle(gsub('_', ' ', names(x)))
+```
+
+
+```{r}
+cism_map(lng = df$longitude,
+         lat = df$latitude,
+         x = eval(parse(text = paste0('x$`', names(x), '`'))),
+         point_size = 0.1,
+         fspdf = man2_fortified) +
+  ggtitle(names(x))
+```
+
